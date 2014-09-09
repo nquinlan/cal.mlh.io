@@ -71,6 +71,7 @@ end
 
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
+	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	# What's my IP?
