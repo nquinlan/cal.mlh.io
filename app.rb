@@ -1,6 +1,7 @@
 require "sinatra"
 require "sinatra/flash"
 require "sinatra/reloader" if Sinatra::Base.development?
+require "icalendar/tzinfo"
 
 require "bundler"
 Bundler.require
@@ -70,6 +71,7 @@ end
 
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
+	response.headers['Content-Type'] = 'text/plain'
 	response['Access-Control-Allow-Origin'] = '*'
 
 	# What's my IP?
@@ -78,11 +80,8 @@ get '/' do
 
 	# Where am I?
 	geo = Geocoder.search(ip)
-	if geo.count == 0
-		cc = "US"
-	else
-		cc = geo[0].country_code
-	end
+	cc = (geo.count > 0) ? geo[0].country_code : "US"
+	cc = "US" unless ["US", "GB"].include?(cc)
 
 	get_mlh_events_as_ical(cc)
 end
