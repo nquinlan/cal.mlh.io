@@ -69,17 +69,13 @@ def get_mlh_events_as_ical(cc)
 	cal.to_ical
 end
 
-get '/test' do
-	request.env.inspect
-end
-
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
 	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	# What's my IP?
-	ip = request.env['REMOTE_ADDR']
+	ip = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_ADDR']
 	ip = "78.148.236.114" if Sinatra::Base.development?
 
 	# Where am I?
