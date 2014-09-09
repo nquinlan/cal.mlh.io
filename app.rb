@@ -90,6 +90,8 @@ get '/:country' do
 	response.headers['Content-Type'] = 'text/calendar'
 	response['Access-Control-Allow-Origin'] = '*'
 
+	params[:country].upcase!
+
 	if params[:country] == "GB" or params[:country] == "UK"
 		cc = "GB"
 	else
@@ -103,6 +105,8 @@ end
 get '/:country.ics' do
 	response.headers['Content-Type'] = 'text/calendar'
 	response['Access-Control-Allow-Origin'] = '*'
+	
+	params[:country].upcase!
 
 	if params[:country] == "GB" or params[:country] == "UK"
 		cc = "GB"
