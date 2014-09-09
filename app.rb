@@ -1,10 +1,10 @@
+require "bundler"
+Bundler.require
+
 require "sinatra"
 require "sinatra/flash"
 require "sinatra/reloader" if Sinatra::Base.development?
 require "icalendar/tzinfo"
-
-require "bundler"
-Bundler.require
 
 def get_season
 	(Time.now.month > 8 ? "f" : "s") + Time.now.year.to_s
