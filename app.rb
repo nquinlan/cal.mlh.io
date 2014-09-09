@@ -69,6 +69,10 @@ def get_mlh_events_as_ical(cc)
 	cal.to_ical
 end
 
+get '/test' do
+	request.env.inspect
+end
+
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
 	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
