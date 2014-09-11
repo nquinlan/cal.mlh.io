@@ -36,10 +36,19 @@ def get_mlh_events_as_ical(cc)
 		event_image = e.css('.image-wrap img').first.attribute("src").to_s
 		event_name = e.css('h3').first.content.to_s
 		event_url = e.css('.event-wrapper > a[target="_blank"]').first.attribute("href").to_s
-		event_date = e.css('p')[0].content.to_s
+		event_date = e.css('p')[0].content.to_s.gsub(/(?<=[0-9])(?:st|nd|rd|th)/, "")
 		event_location = e.css('p')[1].content.to_s
 
-		event_start = parse_time(cc, event_date.split(' - ')[0])
+		event_date_split = event_date.split(' - ')
+
+		if event_date_split.count == 2
+			event_start = parse_time(cc, event_date_split[0])
+		else
+			event_start = parse_time(cc, event_date)
+			event_ends = Date.parse(event_date) + (60*60*48) if Time.parse(event_date).wday == 5 # if starts on a friday, it usually ends on sunday
+			event_ends = Date.parse(event_date) + (60*60*24) if Time.parse(event_date).wday == 6 # if starts on saturday, it usually ends on a sunday
+			event_ends = parse_time(cc, event_ends.to_s)
+		end
 
 		proposed_time = event_start
 		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
@@ -52,6 +61,15 @@ def get_mlh_events_as_ical(cc)
 
 		proposed_time = event_start + (60 * 60 * 72)
 		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+
+		# If hackathon starts on Saturday: let's assume it starts at 10am.
+		# If hackathon starts on Friday: let's assume it starts at 4pm.
+		hour_to_start = (event_start.wday == 6) ? 10 : 16
+		event_start = event_start + (60*60 * (hour_to_start - event_start.hour))
+
+		# Assume event ends at 4pm on Sunday
+		hour_to_finish = 16
+		event_ends = event_ends + (60*60 * (hour_to_finish - event_ends.hour))
 
 		event = Icalendar::Event.new
 		event.summary = event_name
@@ -71,7 +89,7 @@ end
 
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
-	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
+	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	# What's my IP?
@@ -88,6 +106,7 @@ end
 
 get '/:country' do
 	response.headers['Content-Type'] = 'text/calendar'
+	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	params[:country].upcase!
@@ -104,6 +123,7 @@ end
 
 get '/:country.ics' do
 	response.headers['Content-Type'] = 'text/calendar'
+	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 	
 	params[:country].upcase!
