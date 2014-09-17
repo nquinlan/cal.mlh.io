@@ -74,21 +74,23 @@ def get_mlh_events_as_ical(cc)
 		event = Icalendar::Event.new
 		event.summary = event_name
 		event.description = "MLH #{cc}: #{event_name} hackathon in #{event_location}: #{event_url}"
-		event.dtstart = event_start
-		event.dtend = event_ends
+		event.dtstart = event_start.utc
+		event.dtend = event_ends.utc
 
 		cal.add_event(event) if event_date.gsub(/\D+/i, "").to_i > 0
 	end
 
-	tz = TZInfo::Timezone.get(timezone)
-	_timezone = tz.ical_timezone(Time.now)
-	cal.add_timezone _timezone
+	# Disabled for now. Seems to mess the dates up. We'll get back to this soon.
+	# tz = TZInfo::Timezone.get(timezone)
+	# _timezone = tz.ical_timezone(Time.now)
+	# cal.add_timezone _timezone
 
 	cal.to_ical
 end
 
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
+	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	# What's my IP?
@@ -104,15 +106,11 @@ end
 
 get '/:country' do
 	response.headers['Content-Type'] = 'text/calendar'
+	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	params[:country].upcase!
-
-	if ["GB", "UK"].include?(params[:country])
-		cc = "GB"
-	else
-		cc = "US"
-	end
+	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
 
 	return get_mlh_events_as_ical(cc)
 end
@@ -124,12 +122,7 @@ get '/:country.ics' do
 	response['Access-Control-Allow-Origin'] = '*'
 	
 	params[:country].upcase!
-
-	if ["GB", "UK"].include?(params[:country])
-		cc = "GB"
-	else
-		cc = "US"
-	end
+	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
 
 	return get_mlh_events_as_ical(cc)
 end
