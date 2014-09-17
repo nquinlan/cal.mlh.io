@@ -6,12 +6,12 @@ This essentially scrapes events on [mlh.io](http://mlh.io) and converts the data
 
 There's two ways you can interact with MLH Calendar:
 - Enter `cal.mlh.io` on your browser to view all events and add individually.
-- Subscribe to `cal.mlh.io` to automatically have the events on your list.
+- Subscribe to `cal.mlh.io` to automatically have the events on your Calendar.
 
 ## View upcoming hackathons
 Simply type in `http://cal.mlh.io` on your iPhone and this should appear:
 
-![](http://i.imgur.com/dmKtrW0.png)
+![](http://i.imgur.com/dmKtrW0.png =300x)
 
 
 ## Subscribe to upcoming hackathons (iOS)
@@ -21,10 +21,10 @@ Follow these steps on your iOS device:
 - Go to **Settings**
 - Go to **Mail, Contacts, Calendars**
 - Click **Add Account**
-- Click on Other
+- Click on **Other**
 - Click on **Add Subscribed Calendar**
 - Enter as Server: `http://cal.mlh.io`
-- Save
+- Save!
 
 You should now automatically see MLH events appear in your iPhone's native calendar application. If you use a different calendar, it should have it's own "subscribe to a calendar" feature which you should just enter `http://cal.mlh.io` for.
 
@@ -40,7 +40,7 @@ Follow these steps on your Mac:
 - Set **Auto-refresh** to Every week
 - Save!
 
-![](http://i.imgur.com/yDgeoGB.png)
+![](http://i.imgur.com/yDgeoGB.png =300x)
 ![](http://i.imgur.com/j4x4rKv.png)
 
 -----
