@@ -89,35 +89,32 @@ end
 
 get '/' do
 	response.headers['Content-Type'] = 'text/calendar'
-	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	# What's my IP?
 	ip = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_ADDR']
-	ip = "78.148.236.114" if Sinatra::Base.development?
 
 	# Where am I?
 	geo = Geocoder.search(ip)
 	cc = (geo.count > 0) ? geo[0].country_code : "US"
 	cc = "US" unless ["US", "GB"].include?(cc)
 
-	get_mlh_events_as_ical(cc)
+	return get_mlh_events_as_ical(cc)
 end
 
 get '/:country' do
 	response.headers['Content-Type'] = 'text/calendar'
-	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
 
 	params[:country].upcase!
 
-	if params[:country] == "GB" or params[:country] == "UK"
+	if ["GB", "UK"].include?(params[:country])
 		cc = "GB"
 	else
 		cc = "US"
 	end
 
-	get_mlh_events_as_ical(cc)
+	return get_mlh_events_as_ical(cc)
 end
 
 
@@ -128,11 +125,11 @@ get '/:country.ics' do
 	
 	params[:country].upcase!
 
-	if params[:country] == "GB" or params[:country] == "UK"
+	if ["GB", "UK"].include?(params[:country])
 		cc = "GB"
 	else
 		cc = "US"
 	end
 
-	get_mlh_events_as_ical(cc)
+	return get_mlh_events_as_ical(cc)
 end
