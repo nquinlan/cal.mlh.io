@@ -4,7 +4,7 @@
 
 This essentially scrapes events on [mlh.io](http://mlh.io) and converts the data directly into a `.ical` format. It detects your location to show only local events (UK subscribers won't receive information on US events) but entering `cal.mlh.io/:region` (i.e `us`) can override this.
 
-There's two ways you can interact with MLH Calendar:
+There are two ways you can interact with MLH Calendar:
 - Enter `cal.mlh.io` on your browser to view all events and add individually.
 - Subscribe to `cal.mlh.io` to automatically have the events on your Calendar.
 
@@ -26,7 +26,7 @@ Follow these steps on your iOS device:
 - Enter as Server: `http://cal.mlh.io`
 - Save!
 
-You should now automatically see MLH events appear in your iPhone's native calendar application. If you use a different calendar, it should have it's own "subscribe to a calendar" feature which you should just enter `http://cal.mlh.io` for.
+You should now automatically see MLH events appear in your iPhone's native calendar application. If you use a different calendar, it should have its own "subscribe to a calendar" feature which you should just enter `http://cal.mlh.io` for.
 
 
 ## Subscribe to upcoming hackathons (Mac)
@@ -46,7 +46,7 @@ Follow these steps on your Mac:
 -----
 
 ## Fork it, hack it and improve it!
-We've opened sourced the guts behind the MLH Calendar, which is built using Ruby/Sinatra. If you already have Ruby and Git installed, it's as simple as:
+We've open sourced the guts behind the MLH Calendar, which is built using Ruby/Sinatra. If you already have Ruby and Git installed, it's as simple as:
 
 ```
 $ git clone https://github.com/mlh/cal.mlh.io.git
