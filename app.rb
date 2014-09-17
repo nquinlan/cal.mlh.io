@@ -22,7 +22,7 @@ end
 def parse_time(cc, time_string)
 	timezone = TZInfo::Country.get(cc).zone_identifiers.first.to_s
 	tz = TZInfo::Timezone.get(timezone)
-	tz.utc_to_local(Time.parse(time_string).utc)
+	tz.utc_to_local(Time.parse(time_string).utc) + (60*60*24) # Seems to be a date error. Add 24 hours.
 end
 
 def get_mlh_events_as_ical(cc)
