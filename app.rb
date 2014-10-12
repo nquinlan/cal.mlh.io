@@ -6,6 +6,13 @@ require "sinatra/flash"
 require "sinatra/reloader" if Sinatra::Base.development?
 require "icalendar/tzinfo"
 
+# Monkey patch icalendar to allow for dtstamp
+module Icalendar
+	class Calendar
+		optional_single_property :dtstamp, Icalendar::Values::DateTime
+	end
+end
+
 def get_season
 	(Time.now.month > 8 ? "f" : "s") + Time.now.year.to_s
 end
@@ -27,6 +34,7 @@ end
 
 def get_mlh_events_as_ical(cc)
 	cal = Icalendar::Calendar.new
+	cal.dtstamp = Date.new
 	html = HTTParty.get(get_mlh_url(cc)).body
 	doc = Nokogiri::HTML(html)
 	timezone = TZInfo::Country.get(cc).zone_identifiers.first.to_s
