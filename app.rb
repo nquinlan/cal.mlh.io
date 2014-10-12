@@ -17,8 +17,8 @@ def get_season
 	(Time.now.month > 8 ? "f" : "s") + Time.now.year.to_s
 end
 
-def get_mlh_url(cc)
-	case cc.upcase
+def get_mlh_url(country_code)
+	case country_code.upcase
 	when "GB"
 		"http://mlh.io/seasons/#{get_season}-uk/events"
 	else
@@ -26,19 +26,19 @@ def get_mlh_url(cc)
 	end
 end
 
-def parse_time(cc, time_string)
-	timezone = TZInfo::Country.get(cc).zone_identifiers.first.to_s
+def parse_time(country_code, time_string)
+	timezone = TZInfo::Country.get(country_code).zone_identifiers.first.to_s
 	tz = TZInfo::Timezone.get(timezone)
 	tz.utc_to_local(Time.parse(time_string).utc) + (60*60*24) # Seems to be a date error. Add 24 hours.
 end
 
-def get_mlh_events_as_ical(cc, all_day=false)
+def get_mlh_events_as_ical(country_code, all_day=false)
 	cal = Icalendar::Calendar.new
 	cal.prodid = "-//Major League Hacking//cal.mlh.io//EN"
 	cal.dtstamp = Date.new
-	html = HTTParty.get(get_mlh_url(cc)).body
+	html = HTTParty.get(get_mlh_url(country_code)).body
 	doc = Nokogiri::HTML(html)
-	timezone = TZInfo::Country.get(cc).zone_identifiers.first.to_s
+	timezone = TZInfo::Country.get(country_code).zone_identifiers.first.to_s
 
 	doc.css('.event').each do |e|
 		event_logo = e.css('.event-logo img').first.attribute("src").to_s
@@ -51,12 +51,12 @@ def get_mlh_events_as_ical(cc, all_day=false)
 		event_date_split = event_date.split(' - ')
 
 		if event_date_split.count == 2
-			event_start = parse_time(cc, event_date_split[0])
+			event_start = parse_time(country_code, event_date_split[0])
 		else
-			event_start = parse_time(cc, event_date)
+			event_start = parse_time(country_code, event_date)
 			event_end = Date.parse(event_date) + (60*60*48) if Time.parse(event_date).wday == 5 # if starts on a friday, it usually ends on sunday
 			event_end = Date.parse(event_date) + (60*60*24) if Time.parse(event_date).wday == 6 # if starts on saturday, it usually ends on a sunday
-			event_end = parse_time(cc, event_end.to_s)
+			event_end = parse_time(country_code, event_end.to_s)
 		end
 
 		proposed_time = event_start
@@ -82,7 +82,7 @@ def get_mlh_events_as_ical(cc, all_day=false)
 
 		event = Icalendar::Event.new
 		event.summary = event_name
-		event.description = "MLH #{cc}: #{event_name} hackathon in #{event_location}."
+		event.description = "MLH #{country_code}: #{event_name} hackathon in #{event_location}."
 		event.location = event_location
 		event.url = event_url
 		event.url.ical_params = { "VALUE" => "URI" }
@@ -118,7 +118,7 @@ def determine_country (country)
 	if !country.nil?
 		# If country exists, let's just take that
 		country.upcase!
-		cc = ["GB", "UK"].include?(country) ? "GB" : "US"
+		country_code = ["GB", "UK"].include?(country) ? "GB" : "US"
 	else
 		# Otherwise let's look it up
 
@@ -127,22 +127,22 @@ def determine_country (country)
 
 		# Where am I?
 		geo = Geocoder.search(ip)
-		cc = (geo.count > 0) ? geo[0].country_code : "US"
-		cc = "US" unless ["US", "GB"].include?(cc)
+		country_code = (geo.count > 0) ? geo[0].country_code : "US"
+		country_code = "US" unless ["US", "GB"].include?(country_code)
 	end
 
-	cc
+	country_code
 end
 
 def create_feed
 	set_headers
 
-	cc = determine_country params[:country]
+	country_code = determine_country params[:country]
 
 	# Do I want all day events?
 	all_day = !params[:all_day].nil?
 
-	get_mlh_events_as_ical(cc, all_day)
+	get_mlh_events_as_ical(country_code, all_day)
 end
 
 get '/' do
