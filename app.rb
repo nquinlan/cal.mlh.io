@@ -25,7 +25,7 @@ def parse_time(cc, time_string)
 	tz.utc_to_local(Time.parse(time_string).utc) + (60*60*24) # Seems to be a date error. Add 24 hours.
 end
 
-def get_mlh_events_as_ical(cc)
+def get_mlh_events_as_ical(cc, all_day=false)
 	cal = Icalendar::Calendar.new
 	html = HTTParty.get(get_mlh_url(cc)).body
 	doc = Nokogiri::HTML(html)
@@ -67,15 +67,22 @@ def get_mlh_events_as_ical(cc)
 		hour_to_start = (event_start.wday == 6) ? 10 : 16
 		event_start = event_start + (60*60 * (hour_to_start - event_start.hour))
 
-		# Assume event ends at 4pm on Sunday
+		# # Assume event ends at 4pm on Sunday
 		hour_to_finish = 16
 		event_ends = event_ends + (60*60 * (hour_to_finish - event_ends.hour))
 
 		event = Icalendar::Event.new
 		event.summary = event_name
 		event.description = "MLH #{cc}: #{event_name} hackathon in #{event_location}: #{event_url}"
-		event.dtstart = event_start.utc
-		event.dtend = event_ends.utc
+		event.dtstart = event_start
+		event.dtend = event_ends
+
+		if all_day
+			event.dtstart = Icalendar::Values::Date.new(event_start)
+			event.dtstart.ical_params = { "VALUE" => "DATE" }
+			event.dtend = Icalendar::Values::Date.new(event_ends)
+			event.dtend.ical_params = { "VALUE" => "DATE" }
+		end
 
 		cal.add_event(event) if event_date.gsub(/\D+/i, "").to_i > 0
 	end
@@ -101,7 +108,10 @@ get '/' do
 	cc = (geo.count > 0) ? geo[0].country_code : "US"
 	cc = "US" unless ["US", "GB"].include?(cc)
 
-	return get_mlh_events_as_ical(cc)
+	# Do I want all day events?
+	all_day = !params[:all_day].nil?
+
+	return get_mlh_events_as_ical(cc, all_day)
 end
 
 get '/:country' do
@@ -112,7 +122,10 @@ get '/:country' do
 	params[:country].upcase!
 	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
 
-	return get_mlh_events_as_ical(cc)
+	# Do I want all day events?
+	all_day = !params[:all_day].nil?
+
+	return get_mlh_events_as_ical(cc, all_day)
 end
 
 
@@ -124,5 +137,8 @@ get '/:country.ics' do
 	params[:country].upcase!
 	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
 
-	return get_mlh_events_as_ical(cc)
+	# Do I want all day events?
+	all_day = !params[:all_day].nil?
+
+	return get_mlh_events_as_ical(cc, all_day)
 end
