@@ -74,6 +74,7 @@ def get_mlh_events_as_ical(cc)
 		event = Icalendar::Event.new
 		event.summary = event_name
 		event.description = "MLH #{cc}: #{event_name} hackathon in #{event_location}."
+		event.location = event_location
 		event.url = event_url
 		event.url.ical_params = { "VALUE" => "URI" }
 		event.dtstart = event_start.utc
