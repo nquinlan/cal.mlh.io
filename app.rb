@@ -32,7 +32,7 @@ def parse_time(cc, time_string)
 	tz.utc_to_local(Time.parse(time_string).utc) + (60*60*24) # Seems to be a date error. Add 24 hours.
 end
 
-def get_mlh_events_as_ical(cc)
+def get_mlh_events_as_ical(cc, all_day=false)
 	cal = Icalendar::Calendar.new
 	cal.prodid = "-//Major League Hacking//cal.mlh.io//EN"
 	cal.dtstamp = Date.new
@@ -86,8 +86,15 @@ def get_mlh_events_as_ical(cc)
 		event.location = event_location
 		event.url = event_url
 		event.url.ical_params = { "VALUE" => "URI" }
-		event.dtstart = event_start.utc
-		event.dtend = event_end.utc
+		event.dtstart = event_start
+		event.dtend = event_end
+
+		if all_day
+			event.dtstart = Icalendar::Values::Date.new(event_start)
+			event.dtstart.ical_params = { "VALUE" => "DATE" }
+			event.dtend = Icalendar::Values::Date.new(event_end)
+			event.dtend.ical_params = { "VALUE" => "DATE" }
+		end
 
 		cal.add_event(event) if event_date.gsub(/\D+/i, "").to_i > 0
 	end
@@ -113,7 +120,10 @@ get '/' do
 	cc = (geo.count > 0) ? geo[0].country_code : "US"
 	cc = "US" unless ["US", "GB"].include?(cc)
 
-	return get_mlh_events_as_ical(cc)
+	# Do I want all day events?
+	all_day = !params[:all_day].nil?
+
+	return get_mlh_events_as_ical(cc, all_day)
 end
 
 get '/:country' do
@@ -124,7 +134,10 @@ get '/:country' do
 	params[:country].upcase!
 	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
 
-	return get_mlh_events_as_ical(cc)
+	# Do I want all day events?
+	all_day = !params[:all_day].nil?
+
+	return get_mlh_events_as_ical(cc, all_day)
 end
 
 
@@ -136,5 +149,8 @@ get '/:country.ics' do
 	params[:country].upcase!
 	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
 
-	return get_mlh_events_as_ical(cc)
+	# Do I want all day events?
+	all_day = !params[:all_day].nil?
+
+	return get_mlh_events_as_ical(cc, all_day)
 end
