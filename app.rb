@@ -45,22 +45,22 @@ def get_mlh_events_as_ical(cc)
 			event_start = parse_time(cc, event_date_split[0])
 		else
 			event_start = parse_time(cc, event_date)
-			event_ends = Date.parse(event_date) + (60*60*48) if Time.parse(event_date).wday == 5 # if starts on a friday, it usually ends on sunday
-			event_ends = Date.parse(event_date) + (60*60*24) if Time.parse(event_date).wday == 6 # if starts on saturday, it usually ends on a sunday
-			event_ends = parse_time(cc, event_ends.to_s)
+			event_end = Date.parse(event_date) + (60*60*48) if Time.parse(event_date).wday == 5 # if starts on a friday, it usually ends on sunday
+			event_end = Date.parse(event_date) + (60*60*24) if Time.parse(event_date).wday == 6 # if starts on saturday, it usually ends on a sunday
+			event_end = parse_time(cc, event_end.to_s)
 		end
 
 		proposed_time = event_start
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
 
 		proposed_time = event_start + (60 * 60 * 24)
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i		
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i		
 
 		proposed_time = event_start + (60 * 60 * 48)
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
 
 		proposed_time = event_start + (60 * 60 * 72)
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
 
 		# If hackathon starts on Saturday: let's assume it starts at 10am.
 		# If hackathon starts on Friday: let's assume it starts at 4pm.
@@ -69,13 +69,13 @@ def get_mlh_events_as_ical(cc)
 
 		# Assume event ends at 4pm on Sunday
 		hour_to_finish = 16
-		event_ends = event_ends + (60*60 * (hour_to_finish - event_ends.hour))
+		event_end = event_end + (60*60 * (hour_to_finish - event_end.hour))
 
 		event = Icalendar::Event.new
 		event.summary = event_name
 		event.description = "MLH #{cc}: #{event_name} hackathon in #{event_location}: #{event_url}"
 		event.dtstart = event_start.utc
-		event.dtend = event_ends.utc
+		event.dtend = event_end.utc
 
 		cal.add_event(event) if event_date.gsub(/\D+/i, "").to_i > 0
 	end
