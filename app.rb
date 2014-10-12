@@ -107,50 +107,52 @@ def get_mlh_events_as_ical(cc, all_day=false)
 	cal.to_ical
 end
 
-get '/' do
+def set_headers
 	response.headers['Content-Type'] = 'text/calendar'
 	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
+end
 
-	# What's my IP?
-	ip = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_ADDR']
+def determine_country (country)
+	
+	if !country.nil?
+		# If country exists, let's just take that
+		country.upcase!
+		cc = ["GB", "UK"].include?(country) ? "GB" : "US"
+	else
+		# Otherwise let's look it up
 
-	# Where am I?
-	geo = Geocoder.search(ip)
-	cc = (geo.count > 0) ? geo[0].country_code : "US"
-	cc = "US" unless ["US", "GB"].include?(cc)
+		# What's my IP?
+		ip = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_ADDR']
+
+		# Where am I?
+		geo = Geocoder.search(ip)
+		cc = (geo.count > 0) ? geo[0].country_code : "US"
+		cc = "US" unless ["US", "GB"].include?(cc)
+	end
+
+	cc
+end
+
+def create_feed
+	set_headers
+
+	cc = determine_country params[:country]
 
 	# Do I want all day events?
 	all_day = !params[:all_day].nil?
 
-	return get_mlh_events_as_ical(cc, all_day)
+	get_mlh_events_as_ical(cc, all_day)
+end
+
+get '/' do
+	create_feed
 end
 
 get '/:country' do
-	response.headers['Content-Type'] = 'text/calendar'
-	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
-	response['Access-Control-Allow-Origin'] = '*'
-
-	params[:country].upcase!
-	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
-
-	# Do I want all day events?
-	all_day = !params[:all_day].nil?
-
-	return get_mlh_events_as_ical(cc, all_day)
+	create_feed
 end
 
-
 get '/:country.ics' do
-	response.headers['Content-Type'] = 'text/calendar'
-	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
-	response['Access-Control-Allow-Origin'] = '*'
-	
-	params[:country].upcase!
-	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
-
-	# Do I want all day events?
-	all_day = !params[:all_day].nil?
-
-	return get_mlh_events_as_ical(cc, all_day)
+	create_feed
 end
