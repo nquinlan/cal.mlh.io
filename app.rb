@@ -149,10 +149,10 @@ get '/' do
 	create_feed
 end
 
-get '/:country' do
+get '/:country.ics' do
 	create_feed
 end
 
-get '/:country.ics' do
+get '/:country' do
 	create_feed
 end
