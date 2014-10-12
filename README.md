@@ -4,6 +4,8 @@
 
 This essentially scrapes events on [mlh.io](http://mlh.io) and converts the data directly into a `.ical` format. It detects your location to show only local events (UK subscribers won't receive information on US events) but entering `cal.mlh.io/:region` (i.e `us`) can override this.
 
+By default we attempt set durations for events, however, if you wish to have events instead be all day, use the parameter `all_day` to do so (e.g. `cal.mlh.io/?all_day=1`).
+
 There are two ways you can interact with MLH Calendar:
 - Enter `cal.mlh.io` on your browser to view all events and add individually.
 - Subscribe to `cal.mlh.io` to automatically have the events on your Calendar.
