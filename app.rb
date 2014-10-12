@@ -6,12 +6,19 @@ require "sinatra/flash"
 require "sinatra/reloader" if Sinatra::Base.development?
 require "icalendar/tzinfo"
 
+# Monkey patch icalendar to allow for dtstamp
+module Icalendar
+	class Calendar
+		optional_single_property :dtstamp, Icalendar::Values::DateTime
+	end
+end
+
 def get_season
 	(Time.now.month > 8 ? "f" : "s") + Time.now.year.to_s
 end
 
-def get_mlh_url(cc)
-	case cc.upcase
+def get_mlh_url(country_code)
+	case country_code.upcase
 	when "GB"
 		"http://mlh.io/seasons/#{get_season}-uk/events"
 	else
@@ -19,17 +26,19 @@ def get_mlh_url(cc)
 	end
 end
 
-def parse_time(cc, time_string)
-	timezone = TZInfo::Country.get(cc).zone_identifiers.first.to_s
+def parse_time(country_code, time_string)
+	timezone = TZInfo::Country.get(country_code).zone_identifiers.first.to_s
 	tz = TZInfo::Timezone.get(timezone)
 	tz.utc_to_local(Time.parse(time_string).utc) + (60*60*24) # Seems to be a date error. Add 24 hours.
 end
 
-def get_mlh_events_as_ical(cc, all_day=false)
+def get_mlh_events_as_ical(country_code, all_day=false)
 	cal = Icalendar::Calendar.new
-	html = HTTParty.get(get_mlh_url(cc)).body
+	cal.prodid = "-//Major League Hacking//cal.mlh.io//EN"
+	cal.dtstamp = Date.new
+	html = HTTParty.get(get_mlh_url(country_code)).body
 	doc = Nokogiri::HTML(html)
-	timezone = TZInfo::Country.get(cc).zone_identifiers.first.to_s
+	timezone = TZInfo::Country.get(country_code).zone_identifiers.first.to_s
 
 	doc.css('.event').each do |e|
 		event_logo = e.css('.event-logo img').first.attribute("src").to_s
@@ -42,45 +51,48 @@ def get_mlh_events_as_ical(cc, all_day=false)
 		event_date_split = event_date.split(' - ')
 
 		if event_date_split.count == 2
-			event_start = parse_time(cc, event_date_split[0])
+			event_start = parse_time(country_code, event_date_split[0])
 		else
-			event_start = parse_time(cc, event_date)
-			event_ends = Date.parse(event_date) + (60*60*48) if Time.parse(event_date).wday == 5 # if starts on a friday, it usually ends on sunday
-			event_ends = Date.parse(event_date) + (60*60*24) if Time.parse(event_date).wday == 6 # if starts on saturday, it usually ends on a sunday
-			event_ends = parse_time(cc, event_ends.to_s)
+			event_start = parse_time(country_code, event_date)
+			event_end = Date.parse(event_date) + (60*60*48) if Time.parse(event_date).wday == 5 # if starts on a friday, it usually ends on sunday
+			event_end = Date.parse(event_date) + (60*60*24) if Time.parse(event_date).wday == 6 # if starts on saturday, it usually ends on a sunday
+			event_end = parse_time(country_code, event_end.to_s)
 		end
 
 		proposed_time = event_start
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
 
 		proposed_time = event_start + (60 * 60 * 24)
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i		
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i		
 
 		proposed_time = event_start + (60 * 60 * 48)
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
 
 		proposed_time = event_start + (60 * 60 * 72)
-		event_ends = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
+		event_end = proposed_time if proposed_time.day === event_date.split(' - ')[1].to_s.gsub(/\D+/i, "").to_i
 
 		# If hackathon starts on Saturday: let's assume it starts at 10am.
 		# If hackathon starts on Friday: let's assume it starts at 4pm.
 		hour_to_start = (event_start.wday == 6) ? 10 : 16
 		event_start = event_start + (60*60 * (hour_to_start - event_start.hour))
 
-		# # Assume event ends at 4pm on Sunday
+		# Assume event ends at 4pm on Sunday
 		hour_to_finish = 16
-		event_ends = event_ends + (60*60 * (hour_to_finish - event_ends.hour))
+		event_end = event_end + (60*60 * (hour_to_finish - event_end.hour))
 
 		event = Icalendar::Event.new
 		event.summary = event_name
-		event.description = "MLH #{cc}: #{event_name} hackathon in #{event_location}: #{event_url}"
+		event.description = "MLH #{country_code}: #{event_name} hackathon in #{event_location}."
+		event.location = event_location
+		event.url = event_url
+		event.url.ical_params = { "VALUE" => "URI" }
 		event.dtstart = event_start
-		event.dtend = event_ends
+		event.dtend = event_end
 
 		if all_day
 			event.dtstart = Icalendar::Values::Date.new(event_start)
 			event.dtstart.ical_params = { "VALUE" => "DATE" }
-			event.dtend = Icalendar::Values::Date.new(event_ends)
+			event.dtend = Icalendar::Values::Date.new(event_end)
 			event.dtend.ical_params = { "VALUE" => "DATE" }
 		end
 
@@ -95,50 +107,52 @@ def get_mlh_events_as_ical(cc, all_day=false)
 	cal.to_ical
 end
 
-get '/' do
+def set_headers
 	response.headers['Content-Type'] = 'text/calendar'
 	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
 	response['Access-Control-Allow-Origin'] = '*'
+end
 
-	# What's my IP?
-	ip = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_ADDR']
+def determine_country (country)
+	
+	if !country.nil?
+		# If country exists, let's just take that
+		country.upcase!
+		country_code = ["GB", "UK"].include?(country) ? "GB" : "US"
+	else
+		# Otherwise let's look it up
 
-	# Where am I?
-	geo = Geocoder.search(ip)
-	cc = (geo.count > 0) ? geo[0].country_code : "US"
-	cc = "US" unless ["US", "GB"].include?(cc)
+		# What's my IP?
+		ip = request.env['HTTP_X_FORWARDED_FOR'] || request.env['REMOTE_ADDR']
+
+		# Where am I?
+		geo = Geocoder.search(ip)
+		country_code = (geo.count > 0) ? geo[0].country_code : "US"
+		country_code = "US" unless ["US", "GB"].include?(country_code)
+	end
+
+	country_code
+end
+
+def create_feed
+	set_headers
+
+	country_code = determine_country params[:country]
 
 	# Do I want all day events?
 	all_day = !params[:all_day].nil?
 
-	return get_mlh_events_as_ical(cc, all_day)
+	get_mlh_events_as_ical(country_code, all_day)
+end
+
+get '/' do
+	create_feed
+end
+
+get '/:country.ics' do
+	create_feed
 end
 
 get '/:country' do
-	response.headers['Content-Type'] = 'text/calendar'
-	response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
-	response['Access-Control-Allow-Origin'] = '*'
-
-	params[:country].upcase!
-	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
-
-	# Do I want all day events?
-	all_day = !params[:all_day].nil?
-
-	return get_mlh_events_as_ical(cc, all_day)
-end
-
-
-get '/:country.ics' do
-	response.headers['Content-Type'] = 'text/calendar'
-	# response.headers['Content-Type'] = 'text/plain' if Sinatra::Base.development?
-	response['Access-Control-Allow-Origin'] = '*'
-	
-	params[:country].upcase!
-	cc = ["GB", "UK"].include?(params[:country]) ? "GB" : "US"
-
-	# Do I want all day events?
-	all_day = !params[:all_day].nil?
-
-	return get_mlh_events_as_ical(cc, all_day)
+	create_feed
 end
