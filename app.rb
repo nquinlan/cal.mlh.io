@@ -34,6 +34,7 @@ end
 
 def get_mlh_events_as_ical(cc)
 	cal = Icalendar::Calendar.new
+	cal.prodid = "-//Major League Hacking//cal.mlh.io//EN"
 	cal.dtstamp = Date.new
 	html = HTTParty.get(get_mlh_url(cc)).body
 	doc = Nokogiri::HTML(html)
